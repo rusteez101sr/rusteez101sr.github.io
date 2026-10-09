@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyBot — Rishit Dwivedi</title>
+<meta name="description" content="CyBot: TM4C123 mobile robot with register-level C drivers (ping input capture, IR ADC, servo PWM, BNO055 IMU over I2C, UART), a 180° scan-and-detect pipeline, and a Python TCP click-to-move GUI.">
+<link rel="icon" href="../../favicon.ico?v=2" sizes="any">
+<link rel="icon" href="../../assets/brand/favicon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="../../assets/brand/favicon-32.png?v=2" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="../../assets/brand/apple-touch-icon.png?v=2">
+<meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000; --bg-elev:#111214; --border:#1f2124; --border-strong:#2a2d31;
+    --text:#ececea; --muted:#9a9ca1; --faint:#6b6e74;
+    --accent:#8fb3d9; --accent-dim:rgba(143,179,217,.12);
+    --maxw:880px; --radius:12px;
+    --sec-pad:96px; --head-gap:44px; --card-gap:16px; --group-gap:56px;
+    --rail-x:6px;
+    --t:200,48,58; --t-strong:214,72,82; --t-solid:#d9636b; --t-text:#e7a3a8; --t-text-hi:#f1c0c3; --t-hover-bg:#15131a; --rail-indent:32px; --dot:11px; --title-lh:1.4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;scroll-padding-top:80px}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+  body{background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--accent);color:#0a0a0a}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  /* Nav */
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(0,0,0,.82);backdrop-filter:saturate(140%) blur(12px);-webkit-backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid transparent;transition:border-color .3s}
+  header.nav.scrolled{border-bottom-color:var(--border)}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:inline-flex;align-items:center;gap:9px;font-weight:600;letter-spacing:-.01em;font-size:15px}
+  .brand-mark{display:block;width:24px;height:24px;flex:none;transition:opacity .25s ease}
+  .brand:hover .brand-mark{opacity:.8}
+  .brand-name > span{color:var(--accent)}
+  nav ul{display:flex;gap:28px;list-style:none}
+  nav a{font-size:14px;color:var(--muted);transition:color .2s}
+  nav a:hover,nav a.active{color:var(--text)}
+  .menu-btn{display:none;background:none;border:1px solid var(--border-strong);color:var(--text);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
+
+  /* Hero */
+  .hero{padding:120px 0 96px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:5px 12px;margin-bottom:28px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-dim)}
+  h1{font-size:clamp(40px,7vw,64px);line-height:1.05;letter-spacing:-.035em;font-weight:700}
+  .title{margin-top:18px;font-size:clamp(18px,2.4vw,21px);color:var(--text);font-weight:500;letter-spacing:-.01em}
+  .tagline{margin-top:14px;max-width:620px;color:var(--muted);font-size:17px}
+  .cta{margin-top:36px;display:flex;flex-wrap:wrap;gap:12px}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;padding:10px 16px;border-radius:10px;border:1px solid var(--border-strong);color:var(--text);transition:border-color .2s,background .2s,color .2s}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--text);color:#0a0a0a;border-color:var(--text)}
+  .btn.primary:hover{background:var(--accent);border-color:var(--accent);color:#0a0a0a}
+  .btn svg{width:16px;height:16px}
+  .meta{margin-top:28px;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:var(--faint)}
+  .meta a:hover{color:var(--accent)}
+
+  /* Sections */
+  section{padding:var(--sec-pad) 0;border-top:1px solid var(--border)}
+  .sec-head{margin-bottom:var(--head-gap)}
+  .sec-head .row{display:flex;align-items:baseline;gap:14px}
+  .sec-desc{margin-top:10px;color:var(--muted);font-size:15px;max-width:600px;padding-left:34px}
+  .sec-num{font-size:13px;color:var(--accent);font-variant-numeric:tabular-nums;font-weight:500}
+  h2{font-size:24px;letter-spacing:-.02em;font-weight:600}
+  h3{font-size:17px;font-weight:600;letter-spacing:-.01em;line-height:var(--title-lh)}
+  .lead{color:var(--muted);max-width:680px;font-size:16.5px}
+  .lead + .lead{margin-top:14px}
+  .sub-label{display:flex;align-items:center;gap:14px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:var(--group-gap) 0 18px;font-weight:500}
+  .sub-label::after{content:"";flex:1;height:1px;background:var(--border)}
+
+  /* Timeline */
+  .timeline{position:relative;padding-left:var(--rail-indent)}
+  /* rail: a 1px line whose centre sits exactly at --rail-x */
+  .timeline::before{content:"";position:absolute;left:calc(var(--rail-x) - .5px);top:calc(var(--title-lh) * 17px / 2);bottom:0;width:1px;background:linear-gradient(var(--border-strong) 85%,transparent)}
+  .item{position:relative;padding-bottom:48px}
+  .item:last-child{padding-bottom:0}
+  /* dot: centred on the rail (translate -50%) and on the first line of the role title */
+  .item::before{content:"";position:absolute;left:calc(var(--rail-x) - var(--rail-indent));top:calc(var(--title-lh) * 17px / 2);width:var(--dot);height:var(--dot);border-radius:50%;transform:translate(-50%,-50%);background:var(--bg);border:1px solid var(--faint);box-shadow:0 0 0 4px var(--bg)}
+  .item.current::before{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 4px var(--bg),0 0 0 5px rgba(143,179,217,.35)}
+  .status{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:var(--accent);background:var(--accent-dim);border-radius:999px;padding:2px 9px;margin-left:10px;vertical-align:2px;letter-spacing:.01em}
+  .item-top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .org{color:var(--accent);font-weight:500;font-size:15px;margin-top:2px}
+  .side{flex-shrink:0;line-height:var(--title-lh)}
+  .side .where{margin-top:2px}
+  .when{font-size:13.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .where{font-size:13.5px;color:var(--faint)}
+  .side{text-align:right}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+  .tag{font-size:12px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tag + .tag::before{content:"·";margin-right:6px;color:var(--border-strong)}
+  ul.bullets{list-style:none;margin-top:14px;display:grid;gap:10px}
+  ul.bullets li{position:relative;padding-left:18px;color:var(--muted);font-size:15px}
+  ul.bullets li::before{content:"";position:absolute;left:0;top:.72em;width:6px;height:1px;background:var(--faint)}
+
+  /* Cards */
+  .cards{display:grid;gap:var(--card-gap)}
+  .card{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:26px 26px 24px;transition:border-color .25s,transform .25s}
+  .card:hover{border-color:var(--border-strong)}
+  .card .role{font-size:14px;color:var(--accent);margin-top:2px}
+  .project-title{display:flex;align-items:baseline;gap:12px}
+  .project-num{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .badge{display:inline-block;font-size:12px;color:var(--accent);background:var(--accent-dim);border-radius:999px;padding:3px 10px;margin-top:14px;font-weight:500}
+
+  /* Education */
+  .edu{display:grid;gap:var(--card-gap)}
+  .edu .card p{color:var(--muted);font-size:15px;margin-top:8px}
+
+  /* Skills */
+  .skills{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--card-gap)}
+  .skill-group{border:1px solid var(--border);border-radius:var(--radius);padding:22px;background:var(--bg-elev)}
+  .skill-group h3{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .skill-group h3::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-size:12.5px;color:#c9cbcf;border:1px solid var(--border-strong);border-radius:999px;padding:4px 11px;transition:border-color .2s,color .2s}
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* Contact */
+  .contact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--card-gap);margin-top:32px}
+  .contact-card{display:block;border:1px solid var(--border);border-radius:var(--radius);padding:20px;background:var(--bg-elev);transition:border-color .2s}
+  a.contact-card:hover{border-color:var(--accent)}
+  .contact-card .k{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .contact-card .v{margin-top:6px;font-size:15px;word-break:break-word}
+
+  footer{border-top:1px solid var(--border);padding:32px 0 40px;font-size:13.5px;color:var(--faint)}
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .foot nav{display:flex;gap:20px}
+  .foot a:hover{color:var(--accent)}
+
+  /* Fade-in */
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+  .no-js .reveal{opacity:1;transform:none}
+
+  /* Project card hover: uses the independent `translate` property so it never fights the
+     fade-in's `transform`, and declares the fade-in transitions too so they're preserved. */
+  .cards .card{position:relative;transition:opacity .7s ease,transform .7s ease,translate .3s ease,border-color .3s ease,background-color .3s ease,box-shadow .3s ease}
+  .cards .card::after{content:"";position:absolute;left:0;top:18px;bottom:18px;width:2px;border-radius:0 2px 2px 0;background:var(--accent);opacity:0;transition:opacity .3s ease}
+  .cards .card:hover,.cards .card:focus-within{translate:0 -3px;border-color:rgba(143,179,217,.45);background-color:#13161a;box-shadow:0 0 0 1px rgba(143,179,217,.12),0 12px 32px -12px rgba(143,179,217,.18),0 8px 24px -16px rgba(0,0,0,.8)}
+  .cards .card:hover::after,.cards .card:focus-within::after{opacity:1}
+  .cards .card:hover h3{color:#fff}
+  .cards .card:hover .tag{color:var(--muted)}
+  .cards .card h3,.cards .card .tag{transition:color .3s ease}
+  @media (hover:none){.cards .card:hover{translate:none}}
+
+
+  /* LabFlow gallery */
+  .gallery{margin-top:20px;position:relative}
+  .g-viewport{position:relative;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#0d0f12}
+  .g-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .g-track::-webkit-scrollbar{display:none}
+  .g-slide{flex:0 0 100%;scroll-snap-align:center;margin:0;position:relative}
+  .g-slide button{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in}
+  .g-slide img{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:center top}
+  .g-slide figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 10px;font-size:12.5px;color:#d6d8db;background:linear-gradient(transparent,rgba(8,9,11,.85));pointer-events:none}
+  .g-nav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(10,10,10,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--text);display:grid;place-items:center;cursor:pointer;opacity:0;transition:opacity .25s,border-color .25s,color .25s;z-index:2}
+  .g-nav svg{width:16px;height:16px}
+  .g-prev{left:10px}.g-next{right:10px}
+  .gallery:hover .g-nav,.g-nav:focus-visible{opacity:1}
+  .g-nav:hover{border-color:var(--accent);color:var(--accent)}
+  .g-nav[disabled]{opacity:0!important;pointer-events:none}
+  .g-dots{display:flex;justify-content:center;gap:8px;margin-top:12px}
+  .g-dot{width:6px;height:6px;border-radius:999px;border:0;padding:0;background:var(--border-strong);cursor:pointer;transition:width .3s,background .3s}
+  .g-dot[aria-current="true"]{width:18px;background:var(--accent)}
+  @media (hover:none){.g-nav{opacity:1}}
+  /* Lightbox */
+  .lightbox{border:0;padding:0;background:transparent;max-width:min(1200px,94vw);max-height:92vh;margin:auto}
+  .lightbox::backdrop{background:rgba(5,5,6,.88);backdrop-filter:blur(4px)}
+  .lightbox img{display:block;max-width:100%;max-height:86vh;border-radius:10px;border:1px solid var(--border-strong)}
+  .lightbox p{color:var(--muted);font-size:13px;text-align:center;margin-top:10px}
+  .lb-close{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(10,10,10,.7);color:var(--text);font-size:18px;line-height:1;cursor:pointer}
+  .lb-close:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ---------- Featured project card (LabFlow) ---------- */
+  .tint-cybot{--t:48,150,148; --t-strong:72,172,168; --t-solid:#5fb3ad; --t-text:#8fd0ca; --t-text-hi:#b5e3df; --t-hover-bg:#101716}
+  .tint-riscv{--t:128,108,184; --t-strong:148,128,204; --t-solid:#9a8cc8; --t-text:#b8acdf; --t-text-hi:#d2c9ee; --t-hover-bg:#14131c}
+  .cards .card.feature{background-image:linear-gradient(135deg,rgba(var(--t),.11) 0%,rgba(var(--t),.045) 45%,rgba(var(--t),0) 80%);border-color:rgba(var(--t-strong),.2);cursor:pointer}
+  .cards .card.feature::after{background:var(--t-solid)}
+  .cards .card.feature:hover,.cards .card.feature:focus-within{border-color:rgba(var(--t-strong),.5);background-color:var(--t-hover-bg);box-shadow:0 0 0 1px rgba(var(--t-strong),.12),0 14px 34px -14px rgba(var(--t-strong),.25),0 8px 24px -16px rgba(0,0,0,.8)}
+  .feature-grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:24px;align-items:start}
+  .thumb{display:block;border-radius:10px;overflow:hidden;border:1px solid rgba(var(--t-strong),.22);background:#0d0f12;margin-top:4px}
+  .thumb img{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;transition:transform .5s ease}
+  .cards .card.feature:hover .thumb img{transform:scale(1.04)}
+  .stretched{color:inherit}
+  .stretched::before{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit}
+  .stretched:focus-visible{outline:none}
+  .card.feature:has(.stretched:focus-visible){outline:2px solid var(--t-solid);outline-offset:3px}
+  .view-cta{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--t-text);margin-left:auto;transition:gap .25s,color .25s}
+  .cards .card.feature:hover .view-cta{gap:10px;color:var(--t-text-hi)}
+  .feature-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+  .feature-foot .tags{margin:0;padding:0;border:0}
+
+  /* ---------- Project detail page ---------- */
+  .crumb{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);transition:color .2s,gap .2s}
+  .crumb:hover{color:var(--text);gap:10px}
+  .p-hero{padding:56px 0 48px;position:relative}
+  .p-hero h1{margin-top:28px}
+  .p-hero .title{color:var(--t-text)}
+  .p-hero .badge{color:var(--t-text-hi);background:rgba(var(--t-strong),.14)}
+  .repo-link{display:inline-flex;align-items:center;gap:8px;margin-top:22px;font-size:14px;font-weight:500;color:var(--text);border:1px solid var(--border-strong);border-radius:10px;padding:9px 14px;transition:border-color .2s,color .2s}
+  .repo-link:hover{border-color:var(--t-solid);color:var(--t-text-hi)}
+  .repo-link svg{width:16px;height:16px}
+  .p-hero .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .spec-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--card-gap)}
+  .spec{border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;background:var(--bg-elev)}
+  .spec h3{font-size:15px;display:flex;align-items:center;gap:8px}
+  .spec h3::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--t-solid)}
+  .spec p{color:var(--muted);font-size:14.5px;margin-top:8px}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+  .flow .node{font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);border:1px solid rgba(var(--t-strong),.35);background:rgba(var(--t),.07);border-radius:8px;padding:7px 11px}
+  .flow .arrow{color:var(--faint);font-size:13px}
+  .note{font-size:13px;color:var(--faint);margin-top:14px}
+  .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--card-gap);margin-top:36px}
+  .fact{border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;background:var(--bg-elev)}
+  .fact .k{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .fact .v{margin-top:6px;font-size:14.5px;color:var(--text)}
+  .p-section{padding:64px 0;border-top:1px solid var(--border)}
+  .p-section h2{font-size:20px;margin-bottom:18px}
+  .p-section .gallery{margin-top:0}
+  .detail-tags .chip{cursor:default}
+  .next-links{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+  /* ---------- Live background: circuit canvas (pitch black base, fixed, behind all content) ---------- */
+  #bg{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;display:block;z-index:-1;pointer-events:none;background:#000}
+
+  /* CyBot page extras */
+  .steps{list-style:none;display:grid;gap:var(--card-gap);counter-reset:step}
+  .steps li{position:relative;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-elev);padding:18px 20px 18px 62px;counter-increment:step}
+  .steps li::before{content:counter(step,decimal-leading-zero);position:absolute;left:20px;top:18px;font-size:13px;font-weight:600;color:var(--t-text);font-variant-numeric:tabular-nums}
+  .steps h3{font-size:15px}
+  .steps p{color:var(--muted);font-size:14.5px;margin-top:6px}
+  .cmd-table{width:100%;border-collapse:collapse;font-size:14.5px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--bg-elev)}
+  .cmd-table th,.cmd-table td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--border);vertical-align:top}
+  .cmd-table tr:last-child td{border-bottom:0}
+  .cmd-table th{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:500}
+  .cmd-table td{color:var(--muted)}
+  .cmd-table code,.spec code,.steps code,.lead code,.bullets code,.note code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;color:var(--t-text-hi);background:rgba(var(--t),.1);border-radius:5px;padding:1px 6px}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .src-note{display:inline-flex;align-items:center;gap:8px;margin-top:22px;font-size:13.5px;color:var(--faint)}
+  .src-note a{color:var(--muted);border-bottom:1px solid var(--border-strong);transition:color .2s,border-color .2s}
+  .src-note a:hover{color:var(--t-text-hi);border-color:var(--t-solid)}
+  .src-note svg{width:15px;height:15px}
+  @media (max-width:720px){
+    .feature-grid{grid-template-columns:1fr}
+    .thumb{order:-1;margin:16px 0 4px}
+    .facts{grid-template-columns:1fr 1fr}
+    .spec-grid{grid-template-columns:1fr}
+
+    .hero{padding:80px 0 72px}
+    :root{--sec-pad:72px;--head-gap:32px;--group-gap:44px;--rail-indent:28px}
+    .sec-desc{padding-left:0}
+    .menu-btn{display:block}
+    nav ul{display:none;position:absolute;top:64px;left:0;right:0;flex-direction:column;gap:0;background:rgba(0,0,0,.97);border-bottom:1px solid var(--border);padding:8px 24px 16px}
+    nav ul.open{display:flex}
+    nav ul li a{display:block;padding:12px 0;font-size:15px;border-bottom:1px solid var(--border)}
+    nav ul li:last-child a{border-bottom:none}
+    .skills,.contact-grid{grid-template-columns:1fr}
+    .side{text-align:left;display:flex;gap:10px;flex-wrap:wrap}
+    .side .where{margin-top:0}
+    .side .where::before{content:"·";margin-right:10px;color:var(--border-strong)}
+    .item-top{flex-direction:column;gap:4px}
+    .card{padding:22px 20px}
+  }
+</style>
+</head>
+<body class="no-js tint-cybot" id="top">
+<canvas id="bg" aria-hidden="true" data-ink="95,179,173" data-pulse="181,227,223"></canvas>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="../../" class="brand"><img class="brand-mark" src="../../assets/brand/logo.svg?v=2" width="24" height="24" alt=""><span class="brand-name">Rishit Dwivedi<span>.</span></span></a>
+    <nav aria-label="Primary">
+      <button class="menu-btn" aria-expanded="false" aria-controls="nav-list">Menu</button>
+      <ul id="nav-list">
+        <li><a href="../../#about">About</a></li>
+        <li><a href="../../#experience">Experience</a></li>
+        <li><a href="../../#projects" class="active">Projects</a></li>
+        <li><a href="../../#skills">Skills</a></li>
+        <li><a href="../../#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="p-hero reveal">
+      <a class="crumb" href="../../#projects">← Back to projects</a>
+      <h1>CyBot</h1>
+      <p class="title">Autonomous Navigation and Object Detection</p>
+      <p class="tagline">A team mobile-robot project on a TM4C123 microcontroller: register-level C drivers for the robot's sensors, a 180° scan-and-detect pipeline, and a Python TCP client that plots scans live and lets you click on the map to send the robot there.</p>
+      <p class="src-note"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.7 5.38-5.27 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg><span>Source: <a href="https://github.com/airCoder2/cpre288_last_project" target="_blank" rel="noopener">GitHub repository</a> (private, available on request)</span></p>
+      <div class="facts"><div class="fact"><div class="k">Timeline</div><div class="v">Nov 2025 – Dec 2025</div></div><div class="fact"><div class="k">Microcontroller</div><div class="v">TI TM4C123 (Tiva C)</div></div><div class="fact"><div class="k">Firmware</div><div class="v">Bare-metal embedded C</div></div><div class="fact"><div class="k">Host link</div><div class="v">Python client over TCP</div></div></div>
+    </div>
+  </div>
+
+  <section class="p-section" aria-labelledby="ov-h">
+    <div class="wrap">
+      <h2 id="ov-h" class="reveal">Overview</h2>
+      <p class="lead reveal">CyBot is a mobile robot driven by a TI TM4C123. A servo sweeps an infrared sensor and an ultrasonic (ping) sensor across 180°. The firmware turns those readings into a list of detected objects with estimated widths, then turns using an IMU heading and drives while watching the bumpers and cliff sensors. A Python program on a laptop talks to the robot over TCP to show each scan and send movement commands.</p>
+      <p class="lead reveal">I built the embedded C drivers and control logic and the Python TCP interface as part of a team; the repository has commits from several teammates. The LCD, timer, and Roomba Open Interface libraries were provided by the course, and the team wrote the rest.</p>
+    </div>
+  </section>
+
+  <section class="p-section" aria-labelledby="pipe-h">
+    <div class="wrap">
+      <h2 id="pipe-h" class="reveal">How a scan becomes a move</h2>
+      <ol class="steps">
+        <li class="reveal"><h3>Sweep and sample</h3><p>The servo steps from 0° to 180° in 1° increments (181 points). At each angle the firmware averages two IR readings and two ping readings, converts the raw IR ADC value to centimeters with a fitted calibration curve (a sum of two exponentials), and sends an <code>angle,IR,ping</code> line to the host.</p></li>
+        <li class="reveal"><h3>Detect object edges</h3><p>An object starts or ends wherever the IR distance jumps by more than 30 cm compared with the reading two degrees earlier. Anything farther than 80 cm is ignored as background. Each object gets a start and end angle, and its distance comes from the ping sensor.</p></li>
+        <li class="reveal"><h3>Estimate width</h3><p>Each object's linear width is calculated with the law of cosines, using its two edge distances and the angle between them. The objects are then sorted from smallest to largest width with <code>qsort</code>.</p></li>
+        <li class="reveal"><h3>Turn and approach</h3><p>In autonomous mode, the robot points the sensors at the smallest object, measures its distance, turns to face it using the IMU heading, and drives until it is about 5 cm away.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="p-section" aria-labelledby="drv-h">
+    <div class="wrap">
+      <h2 id="drv-h" class="reveal">Drivers</h2>
+      <div class="spec-grid">
+        <div class="spec reveal"><h3>Ultrasonic ping</h3><p>Sends a 10 µs trigger pulse on PB3, then switches the pin to Timer 3B input capture. An interrupt handler timestamps the rising and falling edges of the echo, and the pulse width is converted to distance in cm.</p></div>
+        <div class="spec reveal"><h3>IR distance</h3><p>Reads the analog IR sensor on PB4 / AIN10 with ADC0 sample sequencer 1 and returns the raw 12-bit value, which is then converted to cm with the calibration fit.</p></div>
+        <div class="spec reveal"><h3>Scanning servo</h3><p>Timer 1B in PWM mode on PB5 with a 20 ms period. Each robot gets per-unit calibration values for 0° and 180°, set with an on-board routine that uses the push buttons and LCD.</p></div>
+        <div class="spec reveal"><h3>IMU heading</h3><p>A BNO055 IMU connected over I2C1 on PA6/PA7 and put into its accelerometer-plus-gyroscope fusion mode. Turns track heading toward a target angle, handle the wrap-around at 360°, and stop within 0.2°.</p></div>
+        <div class="spec reveal"><h3>Movement and safety</h3><p>Forward and backward moves use the Roomba Open Interface and keep a running total of distance traveled. The robot stops on a left or right bumper hit, or when a cliff sensor reads very bright (above 2600) or very dark (below 700). Movement status streams to the host as it drives.</p></div>
+        <div class="spec reveal"><h3>UART link</h3><p>UART1 on PB0/PB1 at 115200 baud, with a <code>printf</code>-style send function and line-based receive for incoming commands.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="p-section" aria-labelledby="host-h">
+    <div class="wrap">
+      <h2 id="host-h" class="reveal">Host interface</h2>
+      <p class="lead reveal">A Python program connects to the robot over a TCP socket and draws each scan on a live matplotlib plot in Cartesian coordinates, with the IR trace in red and the ping trace in cyan.</p>
+      <ul class="bullets reveal">
+        <li>Clicking a point on the plot converts it to an angle and distance and sends <code>goto &lt;angle&gt; &lt;distance&gt;</code>, so the robot turns and drives to that spot.</li>
+        <li>Control buttons for Scan, Forward, Backward, Clockwise, Counter-clockwise, and Quit.</li>
+        <li>Shift-click marks points of interest on the map, and Shift-scroll zooms the plot.</li>
+        <li>After a scan command the program reads all 181 scan lines, and while the robot moves it shows the movement and sensor status the robot sends back.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="p-section" aria-labelledby="cmd-h">
+    <div class="wrap">
+      <h2 id="cmd-h" class="reveal">Command protocol</h2>
+      <div class="table-wrap reveal">
+        <table class="cmd-table">
+          <thead><tr><th>Command</th><th>Action on the robot</th></tr></thead>
+          <tbody>
+            <tr><td><code>n</code></td><td>Run a 180° scan and stream the readings</td></tr>
+            <tr><td><code>h</code></td><td>Scan, pick the smallest object, turn toward it, and approach</td></tr>
+            <tr><td><code>goto &lt;angle&gt; &lt;distance&gt;</code></td><td>Turn to an angle (0–360°) and drive the given distance</td></tr>
+            <tr><td><code>w</code> / <code>s</code></td><td>Move forward or backward in small steps</td></tr>
+            <tr><td><code>a</code> / <code>d</code></td><td>Turn 10° counter-clockwise or clockwise</td></tr>
+            <tr><td><code>c</code></td><td>Print the four cliff-sensor readings (debugging)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="p-section" aria-labelledby="tech-h">
+    <div class="wrap">
+      <h2 id="tech-h" class="reveal">Tech</h2>
+      <div class="chips detail-tags reveal"><span class="chip">Embedded C</span><span class="chip">TI TM4C123</span><span class="chip">GPIO / timers</span><span class="chip">Input capture</span><span class="chip">PWM</span><span class="chip">ADC</span><span class="chip">I2C</span><span class="chip">UART</span><span class="chip">Interrupts</span><span class="chip">BNO055 IMU</span><span class="chip">Roomba Open Interface</span><span class="chip">Python</span><span class="chip">TCP sockets</span><span class="chip">matplotlib</span><span class="chip">NumPy</span></div>
+    </div>
+  </section>
+
+  <section class="p-section">
+    <div class="wrap next-links reveal">
+      <a class="btn" href="../../#projects">← All projects</a>
+      <span style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn" href="https://www.linkedin.com/in/rishitdwivedi0605" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a><a class="btn primary" href="mailto:rishit.dwivedi05@gmail.com">Get in touch</a></span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 Rishit Dwivedi</span>
+    <nav aria-label="Footer">
+      <a href="mailto:rishit.dwivedi05@gmail.com">Email</a>
+      <a href="https://www.linkedin.com/in/rishitdwivedi0605" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      <a href="#top">Back to top ↑</a>
+    </nav>
+  </div>
+</footer>
+
+
+<script>
+(function(){
+  document.body.classList.remove('no-js');
+  // Skill chips
+  document.querySelectorAll('[data-chips]').forEach(function(el){
+    el.dataset.chips.split('|').forEach(function(s){
+      var c=document.createElement('span');c.className='chip';c.textContent=s;el.appendChild(c);
+    });
+  });
+  // Nav border on scroll
+  var header=document.querySelector('header.nav');
+  function onScroll(){header.classList.toggle('scrolled',window.scrollY>8);}
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+  // Mobile menu
+  var btn=document.querySelector('.menu-btn'),list=document.getElementById('nav-list');
+  if(btn&&list){btn.addEventListener('click',function(){var o=list.classList.toggle('open');btn.setAttribute('aria-expanded',o);});
+  list.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){list.classList.remove('open');btn.setAttribute('aria-expanded','false');});});}
+  // Back to top: scroll to absolute top (sticky header can't be a reliable anchor target)
+  document.querySelectorAll('a[href="#top"]').forEach(function(a){
+    a.addEventListener('click',function(e){
+      e.preventDefault();
+      var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({top:0,behavior:reduce?'instant':'smooth'});
+      if(history.replaceState)history.replaceState(null,'',location.pathname+location.search);
+    });
+  });
+  // Gallery carousel
+  document.querySelectorAll('[data-gallery]').forEach(function(g){
+    var track=g.querySelector('.g-track'),slides=[].slice.call(track.children),
+        prev=g.querySelector('.g-prev'),next=g.querySelector('.g-next'),dotsWrap=g.querySelector('.g-dots'),idx=0;
+    var dots=slides.map(function(_,i){var d=document.createElement('button');d.type='button';d.className='g-dot';d.setAttribute('aria-label','Show image '+(i+1));
+      d.addEventListener('click',function(){go(i);});dotsWrap.appendChild(d);return d;});
+    function render(){dots.forEach(function(d,i){d.setAttribute('aria-current',i===idx);});prev.disabled=idx===0;next.disabled=idx===slides.length-1;}
+    function go(i){idx=Math.max(0,Math.min(slides.length-1,i));render();track.scrollTo({left:slides[idx].offsetLeft,behavior:'smooth'});}
+    var t;function update(){clearTimeout(t);t=setTimeout(function(){idx=Math.round(track.scrollLeft/track.clientWidth);render();},80);}
+    prev.addEventListener('click',function(){go(idx-1);});next.addEventListener('click',function(){go(idx+1);});
+    track.addEventListener('scroll',update,{passive:true});
+    track.addEventListener('keydown',function(e){if(e.key==='ArrowLeft'){e.preventDefault();go(idx-1);}if(e.key==='ArrowRight'){e.preventDefault();go(idx+1);}});
+    window.addEventListener('resize',function(){track.scrollLeft=slides[idx].offsetLeft;});
+    render();
+  });
+  // Lightbox
+  var lb=document.getElementById('lightbox');
+  if(lb&&lb.showModal){
+    var lbImg=lb.querySelector('img'),lbCap=lb.querySelector('p');
+    document.querySelectorAll('[data-full]').forEach(function(b){b.addEventListener('click',function(){
+      var img=b.querySelector('img');lbImg.src=b.dataset.full;lbImg.alt=img.alt;
+      var fc=b.parentNode.querySelector('figcaption');lbCap.textContent=fc?fc.textContent:'';lb.showModal();});});
+    lb.querySelector('.lb-close').addEventListener('click',function(){lb.close();});
+    lb.addEventListener('click',function(e){if(e.target===lb)lb.close();});
+  }
+  // Reveal on scroll
+  var els=document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -8% 0px',threshold:.05});
+    els.forEach(function(el){io.observe(el);});
+  } else els.forEach(function(el){el.classList.add('in');});
+  // Active nav link
+  var links=list?[].slice.call(list.querySelectorAll('a[href^="#"]')):[];
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var so=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.toggle('active',l.getAttribute('href')==='#'+e.target.id);});}});},{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){s&&so.observe(s);});
+  }
+})();
+</script>
+<!-- Live PCB background (canvas #bg): accent from data-ink/data-pulse; static when reduced motion is on -->
+<script>
+(() => {
+  /* ===== Tweak these ===== */
+  const canvasEl = document.getElementById('bg');
+  if (!canvasEl || !canvasEl.getContext) return;
+  const CFG = {
+    grid: 20,                   // PCB grid pitch in px (shown as 2.54 mm)
+    ink: canvasEl.dataset.ink || '110,190,200',            // board color "r,g,b" (page accent)
+    pulseInk: canvasEl.dataset.pulse || '190,232,236',     // signal color (lighter page accent)
+    baseAlpha: 0.05,            // how visible the board is with no cursor
+    revealAlpha: 0.6,           // how visible it is under the cursor
+    pulseAlpha: 0.75,           // signal brightness multiplier
+    revealRadius: 240,          // spotlight size (px)
+    icDensity: 1 / 260000,      // chips per px of screen
+    passiveDensity: 1 / 45000,  // resistors/caps per px of screen
+    traceChance: 0.65,          // chance each pin gets a trace
+    pulseDensity: 1 / 110000,   // signals per px of screen
+    speed: [60, 140],           // signal speed (px/s)
+    tail: 70,                   // signal tail length (px)
+    crosshair: true,            // CAD-style crosshair + coordinates
+  };
+
+  const PARTS = ['ESP32-S3', 'TM4C123G', 'RV32I', 'XC7A35T', '74HC595', 'NE555',
+                 'LM358', 'ATMEGA328P', 'MCP2515', 'STM32F4', 'SN65HVD230'];
+  const NETS = ['GND', 'VCC', '3V3', 'CLK', 'SDA', 'SCL', 'MOSI', 'MISO',
+                'TX', 'RX', 'CAN_H', 'CAN_L', 'EN', 'RST', 'PWM0', 'ADC1'];
+  const DIRS = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+  const FONT = '"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace';
+
+  const canvas = canvasEl;
+  const ctx = canvas.getContext('2d');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const ri = (a, b) => Math.floor(rand(a, b + 1));
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const ink = a => `rgba(${CFG.ink},${a})`;
+  const pink = a => `rgba(${CFG.pulseInk},${a})`;
+
+  let W, H, DPR, layer, spot, sctx, traces = [], pulses = [], last = 0;
+  const mouse = { x: -9999, y: -9999, tx: -9999, ty: -9999, a: 0, ta: 0 };
+
+  /* ---------- Generate the board ---------- */
+  function build() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    const g = CFG.grid;
+    const cols = Math.ceil(W / g) + 1, rows = Math.ceil(H / g) + 1;
+    const occ = new Set(), diag = new Set();
+    const k = (c, r) => c + ',' + r;
+    const isFree = (c0, r0, c1, r1) => {
+      for (let c = c0; c <= c1; c++) for (let r = r0; r <= r1; r++) if (occ.has(k(c, r))) return false;
+      return true;
+    };
+    const mark = (c0, r0, c1, r1) => {
+      for (let c = c0; c <= c1; c++) for (let r = r0; r <= r1; r++) occ.add(k(c, r));
+    };
+
+    const ics = [], passives = [], vias = [], labels = [], starts = [];
+    traces = [];
+
+    // Chips (pins on left and right, like DIP/SOIC)
+    const nIC = Math.max(2, Math.round(W * H * CFG.icDensity));
+    for (let t = 0; t < nIC * 30 && ics.length < nIC; t++) {
+      const n = ri(3, 8), bw = ri(4, 7), bh = n + 1;
+      if (cols - bw - 3 < 2 || rows - bh - 3 < 2) break;
+      const cx = ri(2, cols - bw - 3), cy = ri(2, rows - bh - 3);
+      if (!isFree(cx - 4, cy - 3, cx + bw + 4, cy + bh + 3)) continue;
+      mark(cx - 1, cy, cx + bw + 1, cy + bh);
+      ics.push({ cx, cy, bw, bh, n, name: pick(PARTS), ref: 'U' + (ics.length + 1) });
+      for (let i = 0; i < n; i++) {
+        starts.push({ c: cx - 1, r: cy + i + 1, d: 4 });
+        starts.push({ c: cx + bw + 1, r: cy + i + 1, d: 0 });
+      }
+    }
+
+    // Resistors and capacitors
+    const nP = Math.round(W * H * CFG.passiveDensity);
+    let rN = 1, cN = 1;
+    for (let t = 0; t < nP * 20 && passives.length < nP; t++) {
+      const hor = Math.random() < 0.5;
+      const c = ri(1, cols - 4), r = ri(1, rows - 4);
+      const c2 = c + (hor ? 2 : 0), r2 = r + (hor ? 0 : 2);
+      if (!isFree(c - 2, r - 2, c2 + 2, r2 + 2)) continue;
+      mark(c - (hor ? 0 : 1), r - (hor ? 1 : 0), c2 + (hor ? 0 : 1), r2 + (hor ? 1 : 0));
+      const isR = Math.random() < 0.6;
+      passives.push({ c, r, c2, r2, hor, ref: isR ? 'R' + rN++ : 'C' + cN++ });
+      starts.push({ c, r, d: hor ? 4 : 6 });
+      starts.push({ c: c2, r: r2, d: hor ? 0 : 2 });
+    }
+
+    // Traces: straight runs with 45 degree bends, ending in a via
+    starts.sort(() => Math.random() - 0.5);
+    for (const s of starts) {
+      if (Math.random() > CFG.traceChance) continue;
+      let { c, r, d } = s, since = 0;
+      const pts = [[c, r]];
+      const L = ri(4, 26);
+      for (let i = 0; i < L; i++) {
+        const diagonal = d % 2 === 1;
+        if (since >= 2 && Math.random() < (diagonal ? 0.35 : 0.12)) {
+          d = (d + (Math.random() < 0.5 ? 1 : 7)) % 8;
+          since = 0;
+        }
+        const [dx, dy] = DIRS[d];
+        const nc = c + dx, nr = r + dy;
+        if (nc < -1 || nr < -1 || nc > cols || nr > rows || occ.has(k(nc, nr))) break;
+        if (dx && dy) {
+          const mid = (c * 2 + dx) + ',' + (r * 2 + dy);
+          if (diag.has(mid)) break;
+          diag.add(mid);
+        }
+        c = nc; r = nr; since++;
+        occ.add(k(c, r));
+        pts.push([c, r]);
+      }
+      if (pts.length < 3) continue;
+
+      // drop collinear points, convert to px, measure length
+      const px = [pts[0]];
+      for (let i = 1; i < pts.length - 1; i++) {
+        const a = pts[i - 1], b = pts[i], n = pts[i + 1];
+        if ((b[0] - a[0]) !== (n[0] - b[0]) || (b[1] - a[1]) !== (n[1] - b[1])) px.push(b);
+      }
+      px.push(pts[pts.length - 1]);
+      const p = px.map(([c, r]) => [c * g, r * g]);
+      const cum = [0];
+      for (let i = 1; i < p.length; i++) cum.push(cum[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));
+      traces.push({ p, cum, len: cum[cum.length - 1] });
+
+      vias.push([c * g, r * g]);
+      if (Math.random() < 0.18) labels.push([c * g, r * g, pick(NETS)]);
+    }
+
+    /* ---------- Draw the board once to an offscreen layer ---------- */
+    layer = document.createElement('canvas');
+    layer.width = W * DPR; layer.height = H * DPR;
+    const l = layer.getContext('2d');
+    l.setTransform(DPR, 0, 0, DPR, 0, 0);
+    l.lineCap = 'round'; l.lineJoin = 'round';
+    l.textBaseline = 'middle';
+
+    // grid dots (only really visible under the cursor)
+    l.fillStyle = ink(0.3);
+    for (let x = 0; x <= W; x += g) for (let y = 0; y <= H; y += g) l.fillRect(x - 0.5, y - 0.5, 1, 1);
+
+    // copper traces
+    l.strokeStyle = ink(1); l.lineWidth = 1.5;
+    l.beginPath();
+    for (const t of traces) t.p.forEach(([x, y], i) => (i ? l.lineTo(x, y) : l.moveTo(x, y)));
+    l.stroke();
+
+    // vias
+    l.lineWidth = 1.2;
+    for (const [x, y] of vias) {
+      l.beginPath(); l.arc(x, y, 3.6, 0, Math.PI * 2);
+      l.fillStyle = '#000'; l.fill(); l.stroke();
+    }
+
+    // chips
+    for (const ic of ics) {
+      const x0 = ic.cx * g, y0 = ic.cy * g, w = ic.bw * g, h = ic.bh * g;
+      l.fillStyle = ink(0.9);
+      for (let i = 0; i < ic.n; i++) {
+        const y = y0 + (i + 1) * g;
+        l.fillRect(x0 - g, y - 3, g - 3, 6);
+        l.fillRect(x0 + w + 3, y - 3, g - 3, 6);
+      }
+      l.strokeStyle = ink(0.7); l.lineWidth = 1;
+      l.strokeRect(x0 + 0.5, y0 + 0.5, w, h);
+      l.beginPath(); l.arc(x0 + 7, y0 + 7, 2, 0, Math.PI * 2); l.stroke();   // pin 1 marker
+      l.fillStyle = ink(0.75);
+      l.font = `9px ${FONT}`; l.textAlign = 'center';
+      l.save(); l.translate(x0 + w / 2, y0 + h / 2);
+      if (ic.name.length * 6 > w - 8) l.rotate(-Math.PI / 2);                // tall label if too wide
+      l.fillText(ic.name, 0, 0);
+      l.restore();
+      l.textAlign = 'left'; l.font = `10px ${FONT}`;
+      l.fillText(ic.ref, x0, y0 - 9);
+    }
+
+    // resistors and capacitors
+    for (const p of passives) {
+      const x1 = p.c * g, y1 = p.r * g, x2 = p.c2 * g, y2 = p.r2 * g;
+      l.fillStyle = ink(0.9);
+      l.fillRect(x1 - 5, y1 - 5, 10, 10);
+      l.fillRect(x2 - 5, y2 - 5, 10, 10);
+      l.strokeStyle = ink(0.55); l.lineWidth = 1;
+      const pad = 9;
+      l.strokeRect(Math.min(x1, x2) - pad + 0.5, Math.min(y1, y2) - pad + 0.5,
+                   Math.abs(x2 - x1) + pad * 2, Math.abs(y2 - y1) + pad * 2);
+      l.fillStyle = ink(0.7); l.font = `8px ${FONT}`; l.textAlign = 'left';
+      l.fillText(p.ref, Math.min(x1, x2) - pad, Math.min(y1, y2) - pad - 6);
+    }
+
+    // net labels
+    l.fillStyle = ink(0.6); l.font = `8px ${FONT}`;
+    for (const [x, y, t] of labels) l.fillText(t, x + 7, y - 7);
+
+    // spotlight buffer
+    spot = document.createElement('canvas');
+    spot.width = spot.height = 2 * CFG.revealRadius * DPR;
+    sctx = spot.getContext('2d');
+
+    const long = traces.filter(t => t.len > 6 * g);
+    const pool = long.length ? long : traces;
+    const n = Math.max(5, Math.round(W * H * CFG.pulseDensity));
+    pulses = pool.length ? Array.from({ length: n }, () => spawn({}, pool, true)) : [];
+  }
+
+  function spawn(p, pool, stagger) {
+    p.pool = pool;
+    p.t = pick(pool);
+    p.rev = Math.random() < 0.5;   // data in or out of the chip
+    p.v = rand(...CFG.speed);
+    p.s = stagger ? rand(-p.t.len * 3, p.t.len) : rand(-p.t.len * 2, 0);
+    return p;
+  }
+
+  function pointAt(t, d) {
+    d = Math.max(0, Math.min(d, t.len));
+    let i = 1;
+    while (i < t.cum.length - 1 && t.cum[i] < d) i++;
+    const a = t.p[i - 1], b = t.p[i];
+    const f = (d - t.cum[i - 1]) / ((t.cum[i] - t.cum[i - 1]) || 1);
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+  }
+
+  /* ---------- Per-frame drawing ---------- */
+  function drawBase() {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = CFG.baseAlpha;
+    ctx.drawImage(layer, 0, 0, W, H);
+    ctx.globalAlpha = 1;
+  }
+
+  function drawReveal() {
+    if (mouse.a < 0.01) return;
+    const R = CFG.revealRadius, S = 2 * R * DPR;
+    const sx = mouse.x - R, sy = mouse.y - R;
+    const x0 = Math.max(0, sx), y0 = Math.max(0, sy);
+    const x1 = Math.min(W, sx + 2 * R), y1 = Math.min(H, sy + 2 * R);
+    if (x1 <= x0 || y1 <= y0) return;
+    sctx.globalCompositeOperation = 'source-over';
+    sctx.clearRect(0, 0, S, S);
+    sctx.drawImage(layer, x0 * DPR, y0 * DPR, (x1 - x0) * DPR, (y1 - y0) * DPR,
+                   (x0 - sx) * DPR, (y0 - sy) * DPR, (x1 - x0) * DPR, (y1 - y0) * DPR);
+    sctx.globalCompositeOperation = 'destination-in';
+    const grad = sctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+    grad.addColorStop(0, 'rgba(0,0,0,1)');
+    grad.addColorStop(0.45, 'rgba(0,0,0,0.6)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    sctx.fillStyle = grad;
+    sctx.fillRect(0, 0, S, S);
+    ctx.globalAlpha = CFG.revealAlpha * mouse.a;
+    ctx.drawImage(spot, sx, sy, 2 * R, 2 * R);
+    ctx.globalAlpha = 1;
+  }
+
+  function drawCrosshair() {
+    if (!CFG.crosshair || mouse.a < 0.01) return;
+    const g = CFG.grid, a = mouse.a;
+    const x = Math.round(mouse.tx / g) * g + 0.5;   // snaps to grid, like PCB CAD
+    const y = Math.round(mouse.ty / g) * g + 0.5;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = ink(0.05 * a);
+    ctx.beginPath();
+    ctx.moveTo(x, 0); ctx.lineTo(x, H);
+    ctx.moveTo(0, y); ctx.lineTo(W, y);
+    ctx.stroke();
+    ctx.strokeStyle = ink(0.5 * a);
+    ctx.beginPath();
+    ctx.moveTo(x - 7, y); ctx.lineTo(x + 7, y);
+    ctx.moveTo(x, y - 7); ctx.lineTo(x, y + 7);
+    ctx.stroke();
+    const mm = v => (Math.round(v / g) * 2.54).toFixed(2).padStart(7, ' ');
+    ctx.fillStyle = ink(0.4 * a);
+    ctx.font = `10px ${FONT}`;
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = x > W - 200 ? 'right' : 'left';
+    ctx.fillText(`X${mm(mouse.tx)}  Y${mm(mouse.ty)}  mm`, x + (x > W - 200 ? -12 : 12), y - 12);
+  }
+
+  function drawPulse(p, dt) {
+    p.s += p.v * dt;
+    const t = p.t;
+    const D = s => (p.rev ? t.len - s : s);
+    const a = Math.max(0, p.s - CFG.tail), b = Math.min(p.s, t.len);
+    if (b > a) {
+      const pts = [pointAt(t, D(a))];
+      const lo = Math.min(D(a), D(b)), hi = Math.max(D(a), D(b));
+      const mids = [];
+      for (let i = 0; i < t.cum.length; i++) if (t.cum[i] > lo && t.cum[i] < hi) mids.push(t.p[i]);
+      if (p.rev) mids.reverse();
+      pts.push(...mids, pointAt(t, D(b)));
+      const s0 = pts[0], h = pts[pts.length - 1];
+      const grad = ctx.createLinearGradient(s0[0], s0[1], h[0], h[1]);
+      grad.addColorStop(0, pink(0));
+      grad.addColorStop(1, pink(0.8 * CFG.pulseAlpha));
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.stroke();
+      if (p.s <= t.len) {
+        ctx.fillStyle = pink(0.9 * CFG.pulseAlpha);
+        ctx.beginPath(); ctx.arc(h[0], h[1], 1.6, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    if (p.s - CFG.tail > t.len) spawn(p, p.pool, false);
+  }
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000 || 0, 0.05);
+    last = now;
+    mouse.x += (mouse.tx - mouse.x) * 0.14;
+    mouse.y += (mouse.ty - mouse.y) * 0.14;
+    mouse.a += (mouse.ta - mouse.a) * 0.08;
+    drawBase();
+    drawReveal();
+    drawCrosshair();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of pulses) drawPulse(p, dt);
+    ctx.globalCompositeOperation = 'source-over';
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- Events ---------- */
+  addEventListener('pointermove', e => {
+    if (mouse.a < 0.01) { mouse.x = e.clientX; mouse.y = e.clientY; }
+    mouse.tx = e.clientX; mouse.ty = e.clientY; mouse.ta = 1;
+  });
+  // Cursor left the page/window: clear the reveal immediately (no lingering spotlight at the edge)
+  function clearMouse() {
+    mouse.a = mouse.ta = 0;
+    mouse.x = mouse.y = mouse.tx = mouse.ty = -9999;
+  }
+  document.documentElement.addEventListener('mouseleave', clearMouse);
+  document.addEventListener('pointerout', e => { if (!e.relatedTarget) clearMouse(); });
+  addEventListener('blur', clearMouse);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearMouse(); });
+  addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') clearMouse(); });
+  addEventListener('pointercancel', clearMouse);
+
+  let rt;
+  addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => { build(); drawBase(); }, 150);
+  });
+
+  build();
+  drawBase();
+  if (!still) requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

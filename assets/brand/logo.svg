@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="196 114 132 132" width="132" height="132" role="img" aria-label="rd monogram">
+  <g fill="none" stroke="#fff" stroke-width="7.5" stroke-linejoin="round">
+    <path d="M212 222 V172 L230 150 H248"/>
+    <path d="M312 137 V230 H280 L268 218 V188 L282 174 H312"/>
+    <circle cx="256" cy="150" r="8"/>
+    <circle cx="212" cy="230" r="8"/>
+    <circle cx="312" cy="129" r="8"/>
+  </g>
+</svg>
