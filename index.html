@@ -34,26 +34,25 @@
   /* Nav */
   header.nav{position:sticky;top:0;z-index:50;background:rgba(0,0,0,.55);backdrop-filter:saturate(140%) blur(8px);-webkit-backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid transparent;transition:padding .4s ease,background-color .4s ease,border-color .4s ease,backdrop-filter .4s ease}
   header.nav.scrolled{background:rgba(0,0,0,.78);backdrop-filter:saturate(140%) blur(12px);-webkit-backdrop-filter:saturate(140%) blur(12px);border-bottom-color:var(--border)}
-  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px;transition:height .4s ease}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;height:64px;padding:0 16px;transition:height .4s ease}
   header.nav.scrolled .nav-inner{height:52px}
-  /* Wordmark folds outside-in; the kept r and d fade, then the RD trace draws in */
-  .brand{position:relative;display:inline-flex;align-items:center;flex:none;height:1.6em;min-width:1.7em;font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:clamp(16px,2.4vw,20px);font-weight:500;letter-spacing:0;color:var(--text);white-space:nowrap}
+  /* r and d fade immediately while other letters fold; the trace draws at the same time */
+  .brand{position:relative;display:inline-flex;align-items:center;flex:none;margin:0;height:1.6em;min-width:1.7em;font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:clamp(16px,2.4vw,20px);font-weight:500;letter-spacing:0;color:var(--text);white-space:nowrap}
   .word{display:inline-flex}
   .ch{display:inline-block;max-width:1ch;overflow:hidden;transition:max-width .45s cubic-bezier(.65,0,.35,1) var(--d,0s),opacity .3s ease var(--d,0s)}
   .mark{position:absolute;left:-0.15em;top:50%;width:1.55em;height:1.55em;transform:translateY(-50%);pointer-events:none;overflow:visible}
-  .mark path{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .5s cubic-bezier(.65,0,.35,1)}
-  .mark circle{transform-box:fill-box;transform-origin:center;transform:scale(0);transition:transform .25s ease}
-  .brand.collapsed .fold{max-width:0;opacity:0}
-  .brand.collapsed .keep{opacity:0;transition:opacity .2s ease .45s}
-  .brand.collapsed .mark path{stroke-dashoffset:0;transition-delay:.5s}
-  .brand.collapsed .mark path:nth-of-type(2){transition-delay:.62s}
-  .brand.collapsed .mark circle{transform:scale(1)}
-  .brand.collapsed .mark circle:nth-of-type(1){transition-delay:.95s}
-  .brand.collapsed .mark circle:nth-of-type(2){transition-delay:1s}
-  .brand.collapsed .mark circle:nth-of-type(3){transition-delay:1.1s}
+  .mark path{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .3s cubic-bezier(.65,0,.35,1)}
+  .mark circle{transform-box:fill-box;transform-origin:center;transform:scale(0);transition:transform .15s ease}
   .brand.collapsed .ch{--d:var(--dc)}
+  .brand.collapsed .fold{max-width:0;opacity:0}
+  .brand.collapsed .keep{opacity:0;transition:opacity .18s ease 0s}
+  .brand.collapsed .mark path{stroke-dashoffset:0;transition:stroke-dashoffset .5s cubic-bezier(.65,0,.35,1) .12s}
+  .brand.collapsed .mark path:nth-of-type(2){transition-delay:.22s}
+  .brand.collapsed .mark circle{transform:scale(1);transition:transform .25s ease}
+  .brand.collapsed .mark circle:nth-of-type(1){transition-delay:.5s}
+  .brand.collapsed .mark circle:nth-of-type(2){transition-delay:.55s}
+  .brand.collapsed .mark circle:nth-of-type(3){transition-delay:.65s}
   .brand:not(.collapsed) .ch{--d:var(--de)}
-  .brand:not(.collapsed) .keep{transition:opacity .15s ease .2s}
   @media (prefers-reduced-motion:reduce){
     .ch,.mark path,.mark circle,.brand .keep,header.nav,.nav-inner{transition:none !important}
   }
@@ -290,7 +289,7 @@
 <canvas id="bg" aria-hidden="true" data-ink="110,190,200" data-pulse="190,232,236"></canvas>
 
 <header class="nav">
-  <div class="wrap nav-inner">
+  <div class="nav-inner">
     <a href="#top" class="brand" id="logo" aria-label="Rishit Dwivedi, home"><span class="word" aria-hidden="true">rishit dwivedi</span><svg class="mark" viewBox="40 40 124 124" fill="none" aria-hidden="true"><path pathLength="1" d="M52 152V92L72 72H96" stroke="currentColor" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path pathLength="1" d="M152 52V152H122L108 138V110L122 96H152" stroke="currentColor" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><circle cx="52" cy="152" r="11" fill="#000" stroke="currentColor" stroke-width="9"/><circle cx="96" cy="72" r="11" fill="#000" stroke="currentColor" stroke-width="9"/><circle cx="152" cy="52" r="11" fill="#000" stroke="var(--accent)" stroke-width="9"/></svg></a>
     <nav aria-label="Primary">
       <button class="menu-btn" aria-expanded="false" aria-controls="nav-list">Menu</button>
@@ -558,7 +557,7 @@
       s.textContent=c===' '?'\u00a0':c;
       var dist=Math.min.apply(null,KEEP.map(function(k){return Math.abs(i-k);}));
       s.style.setProperty('--dc',(dist*0.025)+'s');
-      s.style.setProperty('--de',(0.3+i*0.018)+'s');
+      s.style.setProperty('--de',(0.25+i*0.018)+'s');
       word.appendChild(s);
     });
   }
